@@ -1,22 +1,61 @@
-var express = require('express'); //import de la bibliothèque Express
-var app = express(); //instanciation d'une application Express
+const express = require('express');
+const cors = require('cors');
 
-// Pour s'assurer que l'on peut faire des appels AJAX au serveur
-app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+let allMsgs = [
+  { msg: "Hello World", pseudo: "Admin", date: "2024-06-01T14:23:00.000Z" },
+  { msg: "foobar", pseudo: "User123", date: "2023-11-15T09:12:00.000Z" },
+  { msg: "CentraleSupelec Forever", pseudo: "Alumni", date: "2023-12-10T18:30:00.000Z" }
+];
+
+app.get('/msg/get/:num', (req, res) => {
+  const num = parseInt(req.params.num, 10);
+  if (!isNaN(num) && num >= 0 && num < allMsgs.length) {
+    res.json({ code: 1, message: allMsgs[num] });
+  } else {
+    res.status(404).json({ code: 0, error: "Message non trouvé" });
+  }
 });
 
-// Ici faut faire faire quelque chose à notre app...
-// On va mettre les "routes"  == les requêtes HTTP acceptéés par notre application.
+app.get('/msg/getAll', (req, res) => {
+  res.json(allMsgs);
+});
 
-app.get("/", function(req, res) {
-  res.send("Hello")
-})
+app.get('/msg/count', (req, res) => {
+  res.json({ count: allMsgs.length });
+});
 
+app.post('/msg/post', (req, res) => {
+  const message = req.body.message ? req.body.message.trim() : "";
+  const pseudo = req.body.pseudo ? req.body.pseudo.trim() : "Anonyme";
 
+  if (message !== "") {
+    const newMessage = {
+      msg: message,
+      pseudo: pseudo,
+      date: new Date().toISOString()
+    };
+    allMsgs.push(newMessage);
+    res.json({ code: 1, index: allMsgs.length - 1, message: newMessage });
+  } else {
+    res.status(400).json({ code: 0, error: "Message invalide" });
+  }
+});
 
-app.listen(8080); //commence à accepter les requêtes
-console.log("App listening on port 8080...");
+app.delete('/msg/del/:num', (req, res) => {
+  const num = parseInt(req.params.num, 10);
+  if (!isNaN(num) && num >= 0 && num < allMsgs.length) {
+    allMsgs.splice(num, 1);
+    res.json({ code: 1, message: "Message supprimé avec succès" });
+  } else {
+    res.status(404).json({ code: 0, error: "Message non trouvé" });
+  }
+});
 
+const PORT = 8080;
+app.listen(PORT, () => {
+  console.log(`Serveur démarré sur le port ${PORT}...`);
+});
